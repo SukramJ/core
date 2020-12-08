@@ -4,6 +4,7 @@ import json
 from homematicip.aio.class_maps import (
     TYPE_CLASS_MAP,
     TYPE_GROUP_MAP,
+    TYPE_RULE_MAP,
     TYPE_SECURITY_EVENT_MAP,
 )
 from homematicip.aio.device import AsyncDevice
@@ -131,6 +132,7 @@ class HomeTemplate(Home):
 
     _typeClassMap = TYPE_CLASS_MAP
     _typeGroupMap = TYPE_GROUP_MAP
+    _typeRuleMap = TYPE_RULE_MAP
     _typeSecurityEventMap = TYPE_SECURITY_EVENT_MAP
 
     def __init__(self, connection=None, home_name="", test_devices=[], test_groups=[]):
@@ -183,6 +185,11 @@ class HomeTemplate(Home):
         for group in self.groups:
             mock_groups.append(_get_mock(group))
         self.groups = mock_groups
+
+        mock_rules = []
+        for rule in self.rules:
+            mock_rules.append(_get_mock(rule))
+        self.rules = mock_rules
 
     def download_configuration(self):
         """Return the initial json config."""

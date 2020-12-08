@@ -16,6 +16,7 @@ from homematicip.aio.device import (
     AsyncWiredSwitch8,
 )
 from homematicip.aio.group import AsyncExtendedLinkedSwitchingGroup, AsyncSwitchingGroup
+from homematicip.aio.rule import AsyncSimpleRule
 
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
@@ -73,6 +74,10 @@ async def async_setup_entry(
     for group in hap.home.groups:
         if isinstance(group, (AsyncExtendedLinkedSwitchingGroup, AsyncSwitchingGroup)):
             entities.append(HomematicipGroupSwitch(hap, group))
+
+    for rule in hap.home.rules:
+        if isinstance(rule, AsyncSimpleRule):
+            entities.append(HomematicipRuleSwitch(hap, rule))
 
     if entities:
         async_add_entities(entities)
@@ -170,3 +175,54 @@ class HomematicipSwitchMeasuring(HomematicipSwitch):
         if self._device.energyCounter is None:
             return 0
         return round(self._device.energyCounter)
+
+
+class HomematicipRuleSwitch(HomematicipGenericEntity, SwitchEntity):
+    """Representation of the HomematicIP rule."""
+
+    def __init__(self, hap: HomematicipHAP, rule) -> None:
+        """Initialize switching group."""
+        self._rule = rule
+        super().__init__(hap, hap.home)
+
+    @property
+    def is_on(self) -> bool:
+        """Return true if rule is on."""
+        return self._rule.active
+
+    @property
+    def name(self) -> str:
+        """Return the name."""
+        name = f"{self._rule.label} Rule"
+        # Add a prefix to the name if the homematic ip home has a name.
+        return name if not self._home.name else f"{self._home.name} {name}"
+
+    @property
+    def unique_id(self) -> str:
+        """Return a unique ID."""
+        return f"{self.__class__.__name__}_{self._rule.id}"
+
+    @property
+    def icon(self) -> str:
+        """Return the icon."""
+        return "mdi:alpha-a-circle-outline"
+
+    @property
+    def device_info(self) -> Dict[str, Any]:
+        """Return device specific attributes."""
+        return {
+            "identifiers": {(HMIPC_DOMAIN, self._home.id)},
+        }
+
+    @property
+    def available(self) -> bool:
+        """Return if rule entity is available."""
+        return self._home.connected
+
+    async def async_turn_on(self, **kwargs) -> None:
+        """Turn the rule on."""
+        await self._rule.enable()
+
+    async def async_turn_off(self, **kwargs) -> None:
+        """Turn the rule off."""
+        await self._rule.disable()
